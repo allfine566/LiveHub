@@ -37,30 +37,29 @@ jobs:
             NAME=$(jq -r ".channels[$i].name" "$INPUT")
             URL=$(jq -r ".channels[$i].url" "$INPUT")
             
-            LIVE_URL=$(echo "$URL" | sed 's|/streams$|/live|')
-            echo "→ $NAME ($LIVE_URL)"
+            echo "→ $NAME ($URL)"
             
-            # Added player_client=android to bypass GitHub datacenter blocks
-            # Capture standard output (JSON) in INFO, and error messages in ERR_LOG
-            INFO=$(yt-dlp --extractor-args "youtube:player_client=android" --no-warnings --no-playlist --skip-download --socket-timeout 20 --dump-single-json "$LIVE_URL" 2>/tmp/yt_err.log) || INFO=""
+            # Lê as primeiras 5 lives da aba /streams e filtra apenas as que estão "is_live"
+            INFO=$(yt-dlp --playlist-items 1-5 --match-filter "is_live" --dump-single-json --skip-download "$URL" 2>/tmp/yt_err.log) || INFO=""
             
-            if [ -n "$INFO" ]; then
-              STATUS=$(echo "$INFO" | jq -r '.live_status // "unknown"')
-              if [ "$STATUS" = "is_live" ]; then
-                VIDEO_ID=$(echo "$INFO" | jq -r '.id')
-                TITLE=$(echo "$INFO" | jq -r '.title')
+            if [ -n "$INFO" ] && [ "$INFO" != "{}" ]; then
+              VIDEO_ID=$(echo "$INFO" | jq -r '.entries[0].id // empty')
+              TITLE=$(echo "$INFO" | jq -r '.entries[0].title // empty')
+              
+              if [ -n "$VIDEO_ID" ]; then
                 echo "   ✓ LIVE (video: $VIDEO_ID)"
                 jq --arg id "$ID" --arg name "$NAME" --arg vid "$VIDEO_ID" --arg title "$TITLE" \
                    '. + [{id: $id, name: $name, video_id: $vid, title: $title}]' "$TEMP" > "${TEMP}.new" && mv "${TEMP}.new" "$TEMP"
               else
-                echo "   ✗ not live (status: $STATUS)"
+                echo "   ✗ not live (filter matched but no ID found)."
               fi
             else
-              # If it fails, print the exact error from YouTube to the logs
-              echo "   ✗ failed/not live. Reason: $(tail -n 1 /tmp/yt_err.log)"
+              # Se falhar, imprime o erro exato do YouTube no log!
+              ERR=$(tail -n 1 /tmp/yt_err.log)
+              if [ -z "$ERR" ]; then ERR="Nenhuma live encontrada nas primeiras 5 transmissões."; fi
+              echo "   ✗ failed ou not live. Motivo: $ERR"
             fi
             
-            # Increased sleep to 3 seconds to prevent rate-limiting
             sleep 3
           done
           
