@@ -2,8 +2,6 @@ name: Check YouTube Live Streams (Official API Direct Search)
 
 on:
   schedule:
-    # Executa a cada 15 minutos para manter folga na cota diária (14 canais x 100 cotas x 96 vezes = 13.440 -> a cada 15 min usa 1.400 por rodada)
-    # Recomendado: a cada 20 ou 30 minutos (ex: '*/30 * * * *') para zero risco de estouro de cota
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
@@ -32,13 +30,13 @@ jobs:
           INPUT="LiveStreams.json"
           OUTPUT="live.json"
 
-          if [ -z "$YOUTUBE_API_KEY" ]; then
-            echo "ERROR: YOUTUBE_API_KEY secret is empty or missing in GitHub Secrets!"
+          if [ -z "${YOUTUBE_API_KEY:-}" ]; then
+            echo "::error:: A variável YOUTUBE_API_KEY está vazia! Verifique os Secrets do GitHub."
             exit 1
           fi
 
           if [ ! -f "$INPUT" ]; then
-            echo "ERROR: $INPUT file not found!"
+            echo "::error:: O ficheiro $INPUT não foi encontrado!"
             exit 1
           fi
 
@@ -46,7 +44,7 @@ jobs:
           STATUS_JSON="[]"
 
           COUNT=$(jq '.channels | length' "$INPUT")
-          echo "Checking $COUNT channels via YouTube Data API v3..."
+          echo "Testando $COUNT canais via YouTube Data API v3..."
           echo "--------------------------------------------------------"
 
           for i in $(seq 0 $((COUNT - 1))); do
@@ -71,16 +69,16 @@ jobs:
               API_URL="https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&key=${YOUTUBE_API_KEY}"
               RESPONSE=$(curl -s "$API_URL")
 
-              # Exibe erro caso a chave de API falhe
-              ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+              # Exibe mensagem de erro da API se houver (ex: quota excecuted ou invalid key)
+              API_ERR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
 
-              if [ -n "$ERROR_MSG" ]; then
-                echo "   ✗ API ERROR: $ERROR_MSG"
+              if [ -n "$API_ERR" ]; then
+                echo "   ✗ ERRO DA API GOOGLE: $API_ERR"
                 HAS_ERROR=1
               else
                 VIDEO_ID=$(echo "$RESPONSE" | jq -r '.items[0].id.videoId // empty')
                 
-                if [ -n "$VIDEO_ID" ]; then
+                if [ -n "$VIDEO_ID" ] && [ "$VIDEO_ID" != "null" ]; then
                   TITLE=$(echo "$RESPONSE" | jq -r '.items[0].snippet.title // "Ao Vivo"')
                   THUMBNAIL=$(echo "$RESPONSE" | jq -r '.items[0].snippet.thumbnails.high.url // .items[0].snippet.thumbnails.default.url // ""')
 
@@ -95,7 +93,7 @@ jobs:
                     --arg thumbnail "$THUMBNAIL" \
                     '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
                 else
-                  echo "   ✗ Canal offline / Sem live ativa no momento."
+                  echo "   ✗ Canal offline (Sem live ativa no momento)."
                 fi
               fi
             fi
@@ -117,8 +115,8 @@ jobs:
             '{updated_at: $ts, live_count: ($live | length), live: $live, channels_status: $status}' > "$OUTPUT"
 
           echo "--------------------------------------------------------"
-          echo "Wrote $OUTPUT successfully!"
-          echo "Total de lives encontradas: $(jq '.live | length' "$OUTPUT")"
+          echo "Escrita em $OUTPUT concluída!"
+          echo "Total de lives ativas encontradas: $(jq '.live | length' "$OUTPUT")"
 
       - name: Commit e Push do live.json
         run: |
@@ -127,9 +125,9 @@ jobs:
           git add live.json
           
           if git diff --cached --quiet; then
-            echo "No changes to commit"
+            echo "Sem alterações no live.json"
           else
-            git commit -m "Update live streams status via YouTube API [skip ci]"
+            git commit -m "Update live streams status [skip ci]"
             git pull --rebase origin main || true
             git push
           fi
