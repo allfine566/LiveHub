@@ -1,66 +1,67 @@
 {
-  "updated_at": "2026-11-05T18:44:07Z",
-  "channels": [
+  "updated_at": "2026-11-05T18:48:55Z",
+  "live_count": 0,
+  "live": [],
+  "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
-      "status": "unknown",
-      "candidates_checked": 2
+      "is_live": false,
+      "error": false
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "record_news",
       "name": "Record News",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     },
     {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
-      "status": "unknown",
-      "candidates_checked": 5
+      "is_live": false,
+      "error": false
     }
-  ],
-  "live": []
+  ]
 }
