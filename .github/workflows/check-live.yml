@@ -1,9 +1,8 @@
-
 name: Check YouTube Live Streams
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,18 +19,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Install yt-dlp and jq
         run: |
-          sudo curl -fL \
-            https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
-            -o /usr/local/bin/yt-dlp
-
+          sudo curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
           sudo apt-get update -qq
           sudo apt-get install -y -qq jq
-
           yt-dlp --version
           jq --version
 
@@ -39,11 +34,10 @@ jobs:
         shell: bash
         run: |
           set -u
-
           INPUT="LiveStreams.json"
           OUTPUT="live.json"
           ERROR_FILE="/tmp/yt_errors.log"
-
+          
           LIVE_JSON="[]"
           STATUS_JSON="[]"
 
@@ -53,81 +47,51 @@ jobs:
           fi
 
           COUNT=$(jq '.channels | length' "$INPUT")
-
           echo "Checking $COUNT YouTube channels..."
           echo "------------------------------------------"
 
           for i in $(seq 0 $((COUNT - 1))); do
-
             ID=$(jq -r ".channels[$i].id" "$INPUT")
             NAME=$(jq -r ".channels[$i].name" "$INPUT")
             URL=$(jq -r ".channels[$i].url" "$INPUT")
 
             echo ""
-            echo "Checking: $NAME"
-
+            echo "Checking: $NAME ($URL)"
+            
             FOUND=0
             CHECK_ERROR=0
-            CANDIDATE_COUNT=0
 
-            # Get the latest 5 stream entries.
-            PLAYLIST_JSON=$(yt-dlp \
-              --flat-playlist \
-              --dump-single-json \
-              --playlist-end 5 \
-              --no-warnings \
-              --no-progress \
-              "$URL" 2>"$ERROR_FILE") || PLAYLIST_JSON=""
+            # 1. Obter a lista rápida dos últimos 5 vídeos da aba /streams
+            PLAYLIST_JSON=$(yt-dlp --flat-playlist --dump-single-json --playlist-end 5 --no-warnings --no-progress "$URL" 2>"$ERROR_FILE") || PLAYLIST_JSON=""
 
             if [ -z "$PLAYLIST_JSON" ]; then
-              echo "ERROR: Could not retrieve channel streams."
-              cat "$ERROR_FILE" || true
+              echo "   ✗ ERROR: Não foi possível ler a lista do canal."
               CHECK_ERROR=1
             else
+              mapfile -t VIDEO_IDS < <(echo "$PLAYLIST_JSON" | jq -r '.entries[]? | select(.id != null) | .id')
 
-              mapfile -t VIDEO_IDS < <(
-                echo "$PLAYLIST_JSON" |
-                jq -r '.entries[]? | select(.id != null) | .id'
-              )
-
-              CANDIDATE_COUNT=${#VIDEO_IDS[@]}
-
-              if [ "$CANDIDATE_COUNT" -eq 0 ]; then
-                echo "WARNING: No stream entries found."
+              if [ "${#VIDEO_IDS[@]}" -eq 0 ]; then
+                echo "   ✗ WARNING: Nenhum item recente encontrado."
                 CHECK_ERROR=1
               fi
 
+              # 2. Verificar individualmente os vídeos encontrados até achar um "LIVE"
               for VIDEO_ID in "${VIDEO_IDS[@]}"; do
-
                 VIDEO_URL="https://www.youtube.com/watch?v=$VIDEO_ID"
-
-                VIDEO_JSON=$(yt-dlp \
-                  --dump-single-json \
-                  --skip-download \
-                  --no-warnings \
-                  --no-progress \
-                  "$VIDEO_URL" 2>>"$ERROR_FILE") || VIDEO_JSON=""
+                VIDEO_JSON=$(yt-dlp --dump-single-json --skip-download --no-warnings --no-progress "$VIDEO_URL" 2>>"$ERROR_FILE") || VIDEO_JSON=""
 
                 if [ -z "$VIDEO_JSON" ]; then
-                  echo "Could not inspect video: $VIDEO_ID"
-                  CHECK_ERROR=1
                   continue
                 fi
 
-                IS_LIVE=$(echo "$VIDEO_JSON" | jq -r '
-                  if .is_live == true or .live_status == "is_live"
-                  then "true"
-                  else "false"
-                  end
-                ')
+                IS_LIVE=$(echo "$VIDEO_JSON" | jq -r 'if .is_live == true or .live_status == "is_live" then "true" else "false" end')
 
                 if [ "$IS_LIVE" = "true" ]; then
-
                   VIDEO_TITLE=$(echo "$VIDEO_JSON" | jq -r '.title // "Untitled"')
                   THUMBNAIL=$(echo "$VIDEO_JSON" | jq -r '.thumbnail // ""')
                   VIDEO_ID_FOUND=$(echo "$VIDEO_JSON" | jq -r '.id // empty')
 
-                  echo "LIVE: $VIDEO_TITLE"
+                  echo "   ✓ LIVE DETECTADA: $VIDEO_TITLE (ID: $VIDEO_ID_FOUND)"
 
                   LIVE_JSON=$(echo "$LIVE_JSON" | jq \
                     --arg id "$ID" \
@@ -135,44 +99,25 @@ jobs:
                     --arg video_id "$VIDEO_ID_FOUND" \
                     --arg title "$VIDEO_TITLE" \
                     --arg thumbnail "$THUMBNAIL" \
-                    --arg url "$VIDEO_URL" \
-                    '. + [{
-                      id: $id,
-                      name: $name,
-                      video_id: $video_id,
-                      title: $title,
-                      thumbnail: $thumbnail,
-                      url: $url
-                    }]')
+                    '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
 
                   FOUND=1
+                  break
                 fi
-
               done
             fi
 
-            if [ "$FOUND" -eq 1 ]; then
-              CHANNEL_STATUS="live"
-              echo "RESULT: LIVE"
-            elif [ "$CHECK_ERROR" -eq 1 ]; then
-              CHANNEL_STATUS="unknown"
-              echo "RESULT: UNKNOWN - check failed"
-            else
-              CHANNEL_STATUS="offline"
-              echo "RESULT: OFFLINE"
+            if [ "$FOUND" -eq 0 ]; then
+              echo "   ✗ Sem transmissões ao vivo no momento."
             fi
 
+            # Grava no relatório individual de status
             STATUS_JSON=$(echo "$STATUS_JSON" | jq \
               --arg id "$ID" \
               --arg name "$NAME" \
-              --arg status "$CHANNEL_STATUS" \
-              --argjson candidates "$CANDIDATE_COUNT" \
-              '. + [{
-                id: $id,
-                name: $name,
-                status: $status,
-                candidates_checked: $candidates
-              }]')
+              --argjson is_live $([ "$FOUND" -eq 1 ] && echo "true" || echo "false") \
+              --argjson has_error $([ "$CHECK_ERROR" -eq 1 ] && echo "true" || echo "false") \
+              '. + [{id: $id, name: $name, is_live: $is_live, error: $has_error}]')
 
             sleep 2
           done
@@ -181,32 +126,24 @@ jobs:
 
           jq -n \
             --arg ts "$TIMESTAMP" \
-            --argjson channels "$STATUS_JSON" \
             --argjson live "$LIVE_JSON" \
-            '{
-              updated_at: $ts,
-              channels: $channels,
-              live: $live
-            }' > "$OUTPUT"
+            --argjson status "$STATUS_JSON" \
+            '{updated_at: $ts, live_count: ($live | length), live: $live, channels_status: $status}' > "$OUTPUT"
 
-          echo ""
           echo "------------------------------------------"
-          echo "Monitoring completed."
-          echo "Channels checked: $COUNT"
-          echo "Live streams: $(jq '.live | length' "$OUTPUT")"
-          echo "Unknown channels: $(jq '[.channels[] | select(.status == "unknown")] | length' "$OUTPUT")"
-          echo "Output: $OUTPUT"
+          echo "Wrote $OUTPUT successfully!"
+          echo "Live streams count: $(jq '.live | length' "$OUTPUT")"
 
       - name: Commit and push live.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git add live.json
-
+          
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes to commit"
           else
-            git commit -m "Update YouTube live status [skip ci]"
+            git commit -m "Update live streams status [skip ci]"
+            git pull --rebase origin main || true
             git push
           fi
