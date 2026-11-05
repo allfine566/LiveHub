@@ -1,0 +1,40 @@
+name: Check YouTube Live Streams
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # Every 5 minutes (GitHub minimum)
+  workflow_dispatch:         # Allows manual trigger from the Actions tab
+
+permissions:
+  contents: write            # Needed to commit live.json back to the repo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yt-dlp and jq
+        run: |
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq
+          echo "yt-dlp: $(yt-dlp --version)"
+          echo "jq:     $(jq --version)"
+
+      - name: Check for live streams
+        run: bash .github/scripts/check_streams.sh
+
+      - name: Commit and push live.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update live streams [skip ci]"
+            git push
+          fi
