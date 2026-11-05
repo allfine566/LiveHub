@@ -2,18 +2,18 @@ name: Check YouTube Live Streams
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # Every 5 minutes (GitHub minimum)
-  workflow_dispatch:         # Allows manual trigger from the Actions tab
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write            # Needed to commit live.json back to the repo
+  contents: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install yt-dlp and jq
         run: |
@@ -21,11 +21,48 @@ jobs:
           sudo chmod a+rx /usr/local/bin/yt-dlp
           sudo apt-get update -qq
           sudo apt-get install -y -qq jq
-          echo "yt-dlp: $(yt-dlp --version)"
-          echo "jq:     $(jq --version)"
 
       - name: Check for live streams
-        run: bash .github/scripts/check_streams.sh
+        run: |
+          INPUT="LiveStreams.json"
+          OUTPUT="live.json"
+          TEMP="/tmp/live_results.json"
+          
+          echo "[]" > "$TEMP"
+          COUNT=$(jq '.channels | length' "$INPUT")
+          echo "Checking $COUNT channels from $INPUT..."
+          
+          for i in $(seq 0 $((COUNT - 1))); do
+            ID=$(jq -r ".channels[$i].id" "$INPUT")
+            NAME=$(jq -r ".channels[$i].name" "$INPUT")
+            URL=$(jq -r ".channels[$i].url" "$INPUT")
+            
+            LIVE_URL=$(echo "$URL" | sed 's|/streams$|/live|')
+            echo "→ $NAME ($LIVE_URL)"
+            
+            INFO=$(yt-dlp --no-warnings --no-playlist --skip-download --socket-timeout 20 --dump-single-json "$LIVE_URL" 2>/dev/null) || INFO=""
+            
+            if [ -n "$INFO" ]; then
+              STATUS=$(echo "$INFO" | jq -r '.live_status // "unknown"')
+              if [ "$STATUS" = "is_live" ]; then
+                VIDEO_ID=$(echo "$INFO" | jq -r '.id')
+                TITLE=$(echo "$INFO" | jq -r '.title')
+                echo "   ✓ LIVE (video: $VIDEO_ID)"
+                jq --arg id "$ID" --arg name "$NAME" --arg vid "$VIDEO_ID" --arg title "$TITLE" \
+                   '. + [{id: $id, name: $name, video_id: $vid, title: $title}]' "$TEMP" > "${TEMP}.new" && mv "${TEMP}.new" "$TEMP"
+              else
+                echo "   ✗ not live (status: $STATUS)"
+              fi
+            else
+              echo "   ✗ not live (no active stream)"
+            fi
+            sleep 1
+          done
+          
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          jq -n --arg ts "$TIMESTAMP" --slurpfile live "$TEMP" '{updated_at: $ts, live: $live[0]}' > "$OUTPUT"
+          echo "──────────────────────────────────────────"
+          echo "Wrote $OUTPUT with $(jq '.live | length' "$OUTPUT") live stream(s)."
 
       - name: Commit and push live.json
         run: |
