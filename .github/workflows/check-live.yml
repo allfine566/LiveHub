@@ -1,4 +1,164 @@
-ssfully!"
+name: Check YouTube Live Streams
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: youtube-live-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yt-dlp and jq
+        run: |
+          sudo curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq
+          yt-dlp --version
+          jq --version
+
+      - name: Check YouTube channels
+        shell: bash
+        run: |
+          set -u
+          INPUT="LiveStreams.json"
+          OUTPUT="live.json"
+          ERROR_FILE="/tmp/yt_errors.log"
+          
+          LIVE_JSON="[]"
+          STATUS_JSON="[]"
+
+          if [ ! -f "$INPUT" ]; then
+            echo "ERROR: $INPUT not found."
+            exit 1
+          fi
+
+          COUNT=$(jq '.channels | length' "$INPUT")
+          echo "Checking $COUNT YouTube channels..."
+          echo "------------------------------------------"
+
+          for i in $(seq 0 $((COUNT - 1))); do
+            ID=$(jq -r ".channels[$i].id" "$INPUT")
+            NAME=$(jq -r ".channels[$i].name" "$INPUT")
+            URL=$(jq -r ".channels[$i].url" "$INPUT")
+
+            # Extrai o @handle base a partir do URL do canal (ex: https://www.youtube.com/@cnnbrasil)
+            BASE_URL=$(echo "$URL" | sed 's/\/streams//g' | sed 's/\/$//g')
+            DIRECT_LIVE_URL="${BASE_URL}/live"
+
+            echo ""
+            echo "Checking: $NAME ($DIRECT_LIVE_URL)"
+            
+            FOUND=0
+            CHECK_ERROR=0
+            VIDEO_JSON=""
+
+            # 1. Tentar primeiro a rota direta de live do canal (https://www.youtube.com/@handle/live)
+            VIDEO_JSON=$(yt-dlp --dump-single-json --skip-download --no-warnings --no-progress "$DIRECT_LIVE_URL" 2>"$ERROR_FILE") || VIDEO_JSON=""
+
+            # 2. Verificar se o JSON retornado é de um vídeo em transmissão ao vivo
+            if [ -n "$VIDEO_JSON" ]; then
+              IS_LIVE=$(echo "$VIDEO_JSON" | jq -r 'if .is_live == true or .live_status == "is_live" then "true" else "false" end')
+              
+              if [ "$IS_LIVE" = "true" ]; then
+                VIDEO_TITLE=$(echo "$VIDEO_JSON" | jq -r '.title // "Untitled"')
+                THUMBNAIL=$(echo "$VIDEO_JSON" | jq -r '.thumbnail // ""')
+                VIDEO_ID_FOUND=$(echo "$VIDEO_JSON" | jq -r '.id // empty')
+
+                echo "   ✓ LIVE DETECTADA: $VIDEO_TITLE (ID: $VIDEO_ID_FOUND)"
+
+                LIVE_JSON=$(echo "$LIVE_JSON" | jq \
+                  --arg id "$ID" \
+                  --arg name "$NAME" \
+                  --arg video_id "$VIDEO_ID_FOUND" \
+                  --arg title "$VIDEO_TITLE" \
+                  --arg thumbnail "$THUMBNAIL" \
+                  '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
+
+                FOUND=1
+              fi
+            else
+              CHECK_ERROR=1
+            fi
+
+            # 3. Fallback: Se a rota /live não retornar uma live ativa, checar os itens da aba /streams
+            if [ "$FOUND" -eq 0 ]; then
+              echo "   ↳ Sem live direta. Checando lista da aba /streams..."
+              PLAYLIST_JSON=$(yt-dlp --flat-playlist --dump-single-json --playlist-end 10 --no-warnings --no-progress "$URL" 2>>"$ERROR_FILE") || PLAYLIST_JSON=""
+
+              if [ -n "$PLAYLIST_JSON" ]; then
+                mapfile -t VIDEO_IDS < <(echo "$PLAYLIST_JSON" | jq -r '.entries[]? | select(.id != null) | .id')
+
+                for VIDEO_ID in "${VIDEO_IDS[@]}"; do
+                  SUB_URL="https://www.youtube.com/watch?v=$VIDEO_ID"
+                  SUB_JSON=$(yt-dlp --dump-single-json --skip-download --no-warnings --no-progress "$SUB_URL" 2>>"$ERROR_FILE") || SUB_JSON=""
+
+                  if [ -z "$SUB_JSON" ]; then
+                    continue
+                  fi
+
+                  IS_SUB_LIVE=$(echo "$SUB_JSON" | jq -r 'if .is_live == true or .live_status == "is_live" then "true" else "false" end')
+
+                  if [ "$IS_SUB_LIVE" = "true" ]; then
+                    VIDEO_TITLE=$(echo "$SUB_JSON" | jq -r '.title // "Untitled"')
+                    THUMBNAIL=$(echo "$SUB_JSON" | jq -r '.thumbnail // ""')
+                    VIDEO_ID_FOUND=$(echo "$SUB_JSON" | jq -r '.id // empty')
+
+                    echo "   ✓ LIVE DETECTADA NA ABA /STREAMS: $VIDEO_TITLE (ID: $VIDEO_ID_FOUND)"
+
+                    LIVE_JSON=$(echo "$LIVE_JSON" | jq \
+                      --arg id "$ID" \
+                      --arg name "$NAME" \
+                      --arg video_id "$VIDEO_ID_FOUND" \
+                      --arg title "$VIDEO_TITLE" \
+                      --arg thumbnail "$THUMBNAIL" \
+                      '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
+
+                    FOUND=1
+                    CHECK_ERROR=0
+                    break
+                  fi
+                done
+              fi
+            fi
+
+            if [ "$FOUND" -eq 0 ]; then
+              echo "   ✗ Canal offline (Sem transmissões ao vivo)."
+            fi
+
+            STATUS_JSON=$(echo "$STATUS_JSON" | jq \
+              --arg id "$ID" \
+              --arg name "$NAME" \
+              --argjson is_live $([ "$FOUND" -eq 1 ] && echo "true" || echo "false") \
+              --argjson has_error $([ "$CHECK_ERROR" -eq 1 ] && echo "true" || echo "false") \
+              '. + [{id: $id, name: $name, is_live: $is_live, error: $has_error}]')
+
+            sleep 2
+          done
+
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          jq -n \
+            --arg ts "$TIMESTAMP" \
+            --argjson live "$LIVE_JSON" \
+            --argjson status "$STATUS_JSON" \
+            '{updated_at: $ts, live_count: ($live | length), live: $live, channels_status: $status}' > "$OUTPUT"
+
+          echo "------------------------------------------"
+          echo "Wrote $OUTPUT successfully!"
           echo "Live streams count: $(jq '.live | length' "$OUTPUT")"
 
       - name: Commit and push live.json
