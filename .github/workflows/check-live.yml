@@ -40,7 +40,9 @@ jobs:
             LIVE_URL=$(echo "$URL" | sed 's|/streams$|/live|')
             echo "→ $NAME ($LIVE_URL)"
             
-            INFO=$(yt-dlp --no-warnings --no-playlist --skip-download --socket-timeout 20 --dump-single-json "$LIVE_URL" 2>/dev/null) || INFO=""
+            # Added player_client=android to bypass GitHub datacenter blocks
+            # Capture standard output (JSON) in INFO, and error messages in ERR_LOG
+            INFO=$(yt-dlp --extractor-args "youtube:player_client=android" --no-warnings --no-playlist --skip-download --socket-timeout 20 --dump-single-json "$LIVE_URL" 2>/tmp/yt_err.log) || INFO=""
             
             if [ -n "$INFO" ]; then
               STATUS=$(echo "$INFO" | jq -r '.live_status // "unknown"')
@@ -54,9 +56,12 @@ jobs:
                 echo "   ✗ not live (status: $STATUS)"
               fi
             else
-              echo "   ✗ not live (no active stream)"
+              # If it fails, print the exact error from YouTube to the logs
+              echo "   ✗ failed/not live. Reason: $(tail -n 1 /tmp/yt_err.log)"
             fi
-            sleep 1
+            
+            # Increased sleep to 3 seconds to prevent rate-limiting
+            sleep 3
           done
           
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
