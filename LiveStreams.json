@@ -5,52 +5,72 @@
     {
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
-      "url": "https://www.youtube.com/@tvsucessomoz/streams"
+      "channel_id": "UCa7u08-TfX6RzB18sW22c4w"
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
-      "url": "https://www.youtube.com/@miramarnews/streams"
+      "channel_id": "UCU9RslZp8uK3RklyZl4s2yA"
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
-      "url": "https://www.youtube.com/@tvmiramar/streams"
+      "channel_id": "UCG0-P2c_N1qJ71-8Wb6C7HQ"
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
-      "url": "https://www.youtube.com/@tvm.mocambique/streams"
+      "channel_id": "UCsZ34d8T3k1Nq_s1-ZzL8gQ"
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
-      "url": "https://www.youtube.com/@mediamaistv6775/streams"
+      "channel_id": "UCy2_qMh1V57X1wF_eU7nCtw"
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
-      "url": "https://www.youtube.com/@limpopochannelmz5325/streams"
+      "channel_id": "UCQ53p4M1V1J7f_RzE9U4h_g"
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
-      "url": "https://www.youtube.com/@bawitotv1/streams"
+      "channel_id": "UC0tZ1Wq4Yy5rV1R_a7e9w_Q"
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
-      "url": "https://www.youtube.com/@euronewspt/streams"
+      "channel_id": "UCvup4t_e5PjU9bX5d_6q_uA"
     },
     {
       "id": "record_news",
       "name": "Record News",
-      "url": "https://www.youtube.com/@recordnews/streams"
+      "channel_id": "UCqq3v6Yh08mJ9l3j3W_40hA"
     },
-	{
+    {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
-      "url": "https://www.youtube.com/@cnnbrasil/streams"
+      "channel_id": "UCvJ_S2m4_488p5p9R5g_X6w"
+    },
+    {
+      "id": "mbc_tv_mocambique",
+      "name": "MBC TV Moçambique",
+      "channel_id": "UC5fn-hTMTePwJhZsJym6LJw"
+    },
+    {
+      "id": "tv_gloria_mocambique",
+      "name": "TV Glória Moçambique",
+      "channel_id": "UC2Z3tH-4_yH1Vb9k4xU1Lvw"
+    },
+    {
+      "id": "apostolo_onorio_cutane",
+      "name": "Apóstolo Onório Cutane",
+      "channel_id": "UCq3ZqV-0lJbQo2QdJ4o_RPA"
+    },
+    {
+      "id": "cmtv_sa",
+      "name": "CMTV SA",
+      "channel_id": "UCvDfsY8p0u21r3dY6Y4oUxg"
     }
   ]
 }
