@@ -1,4 +1,4 @@
-name: Check YouTube Live Streams
+name: Check YouTube Live Streams (Low-Quota API)
 
 on:
   schedule:
@@ -15,130 +15,106 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install yt-dlp and jq
-        run: |
-          sudo curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq jq
-          yt-dlp --version
-          jq --version
-
-      - name: Check YouTube channels
+      - name: Check YouTube Live via Batch API
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         shell: bash
         run: |
           set -u
           INPUT="LiveStreams.json"
           OUTPUT="live.json"
-          ERROR_FILE="/tmp/yt_errors.log"
-          
-          LIVE_JSON="[]"
-          STATUS_JSON="[]"
 
-          if [ ! -f "$INPUT" ]; then
-            echo "ERROR: $INPUT not found."
+          if [ -z "$YOUTUBE_API_KEY" ]; then
+            echo "ERROR: YOUTUBE_API_KEY secret is missing!"
             exit 1
           fi
 
+          if [ ! -f "$INPUT" ]; then
+            echo "ERROR: $INPUT file not found!"
+            exit 1
+          fi
+
+          LIVE_JSON="[]"
+          STATUS_JSON="[]"
+
           COUNT=$(jq '.channels | length' "$INPUT")
-          echo "Checking $COUNT YouTube channels..."
-          echo "------------------------------------------"
+          echo "Checking $COUNT channels (Optimized Low-Quota Mode)..."
+          echo "--------------------------------------------------------"
 
           for i in $(seq 0 $((COUNT - 1))); do
             ID=$(jq -r ".channels[$i].id" "$INPUT")
             NAME=$(jq -r ".channels[$i].name" "$INPUT")
-            URL=$(jq -r ".channels[$i].url" "$INPUT")
-
-            # Garante que o URL aponta para a aba de transmissões
-            STREAMS_URL=$(echo "$URL" | sed 's/\/*$/\/streams/')
+            PLAYLIST_ID=$(jq -r ".channels[$i].uploads_playlist_id // empty" "$INPUT")
 
             echo ""
-            echo "Checking: $NAME ($STREAMS_URL)"
-            
+            echo "Checking: $NAME"
+
             FOUND=0
-            CHECK_ERROR=0
-            VIDEO_ID_FOUND=""
-            VIDEO_TITLE=""
+            HAS_ERROR=0
+            VIDEO_ID=""
+            TITLE=""
             THUMBNAIL=""
 
-            # Método 1: Busca direta por live ativa na aba /streams usando match-filter no yt-dlp
-            LIVE_DATA=$(yt-dlp \
-              --playlist-end 5 \
-              --match-filter "is_live" \
-              --dump-single-json \
-              --skip-download \
-              --no-warnings \
-              --no-progress \
-              "$STREAMS_URL" 2>"$ERROR_FILE") || LIVE_DATA=""
+            if [ -z "$PLAYLIST_ID" ]; then
+              echo "   ✗ Erro: uploads_playlist_id não configurado no JSON."
+              HAS_ERROR=1
+            else
+              # 1. Pega os 3 vídeos mais recentes da playlist do canal (Custo: 1 Ponto)
+              PL_URL="https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=3&key=${YOUTUBE_API_KEY}"
+              PL_RESP=$(curl -s "$PL_URL")
 
-            if [ -n "$LIVE_DATA" ]; then
-              # Se encontrou no nível superior do JSON (vídeo único)
-              VIDEO_ID_FOUND=$(echo "$LIVE_DATA" | jq -r '.id // empty')
-              
-              # Se for uma playlist tratada com entradas
-              if [ -z "$VIDEO_ID_FOUND" ]; then
-                VIDEO_ID_FOUND=$(echo "$LIVE_DATA" | jq -r '.entries[]? | select(.is_live == true or .live_status == "is_live") | .id' | head -n 1)
-              fi
+              ERR_CHECK=$(echo "$PL_RESP" | jq -r '.error.message // empty')
+              if [ -n "$ERR_CHECK" ]; then
+                echo "   ✗ API Error: $ERR_CHECK"
+                HAS_ERROR=1
+              else
+                # Extrai os IDs dos 3 vídeos mais recentes
+                VIDEO_IDS=$(echo "$PL_RESP" | jq -r '.items[]?.snippet.resourceId.videoId' | tr '\n' ',' | sed 's/,$//')
 
-              if [ -n "$VIDEO_ID_FOUND" ]; then
-                VIDEO_TITLE=$(echo "$LIVE_DATA" | jq -r '.title // .entries[0].title // "Ao Vivo"')
-                THUMBNAIL=$(echo "$LIVE_DATA" | jq -r '.thumbnail // .entries[0].thumbnail // ""')
-                FOUND=1
-              fi
-            fi
+                if [ -n "$VIDEO_IDS" ]; then
+                  # 2. Verifica em lote se algum desses vídeos é uma LIVE ativa (Custo: 1 Ponto)
+                  VID_URL="https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${VIDEO_IDS}&key=${YOUTUBE_API_KEY}"
+                  VID_RESP=$(curl -s "$VID_URL")
 
-            # Método 2 (Fallback): Testar rota direta /live caso o Método 1 não encontre
-            if [ "$FOUND" -eq 0 ]; then
-              BASE_URL=$(echo "$URL" | sed 's/\/streams//g' | sed 's/\/$//g')
-              DIRECT_URL="${BASE_URL}/live"
-              
-              DIRECT_DATA=$(yt-dlp \
-                --dump-single-json \
-                --skip-download \
-                --no-warnings \
-                --no-progress \
-                "$DIRECT_URL" 2>>"$ERROR_FILE") || DIRECT_DATA=""
+                  # Filtra o item que possui a tag de live ativa
+                  LIVE_ITEM=$(echo "$VID_RESP" | jq '.items[] | select(.snippet.liveBroadcastContent == "live")' | head -n 1)
 
-              if [ -n "$DIRECT_DATA" ]; then
-                IS_LIVE=$(echo "$DIRECT_DATA" | jq -r 'if .is_live == true or .live_status == "is_live" then "true" else "false" end')
-                if [ "$IS_LIVE" = "true" ]; then
-                  VIDEO_ID_FOUND=$(echo "$DIRECT_DATA" | jq -r '.id // empty')
-                  VIDEO_TITLE=$(echo "$DIRECT_DATA" | jq -r '.title // "Ao Vivo"')
-                  THUMBNAIL=$(echo "$DIRECT_DATA" | jq -r '.thumbnail // ""')
-                  FOUND=1
+                  if [ -n "$LIVE_ITEM" ] && [ "$LIVE_ITEM" != "null" ]; then
+                    VIDEO_ID=$(echo "$LIVE_ITEM" | jq -r '.id')
+                    TITLE=$(echo "$LIVE_ITEM" | jq -r '.snippet.title')
+                    THUMBNAIL=$(echo "$LIVE_ITEM" | jq -r '.snippet.thumbnails.high.url // .snippet.thumbnails.default.url')
+
+                    echo "   ✓ LIVE ATIVA DETECTADA: $TITLE (ID: $VIDEO_ID)"
+                    FOUND=1
+
+                    LIVE_JSON=$(echo "$LIVE_JSON" | jq \
+                      --arg id "$ID" \
+                      --arg name "$NAME" \
+                      --arg video_id "$VIDEO_ID" \
+                      --arg title "$TITLE" \
+                      --arg thumbnail "$THUMBNAIL" \
+                      '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
+                  else
+                    echo "   ✗ Sem transmissões ao vivo no momento."
+                  fi
+                else
+                  echo "   ✗ Nenhum vídeo recente encontrado na playlist."
                 fi
               fi
             fi
 
-            if [ "$FOUND" -eq 1 ]; then
-              echo "   ✓ LIVE DETECTADA: $VIDEO_TITLE (ID: $VIDEO_ID_FOUND)"
-
-              LIVE_JSON=$(echo "$LIVE_JSON" | jq \
-                --arg id "$ID" \
-                --arg name "$NAME" \
-                --arg video_id "$VIDEO_ID_FOUND" \
-                --arg title "$VIDEO_TITLE" \
-                --arg thumbnail "$THUMBNAIL" \
-                '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
-            else
-              echo "   ✗ Canal offline / Sem live ativa no momento."
-            fi
-
-            # Grava no relatório de status individual
             STATUS_JSON=$(echo "$STATUS_JSON" | jq \
               --arg id "$ID" \
               --arg name "$NAME" \
               --argjson is_live $([ "$FOUND" -eq 1 ] && echo "true" || echo "false") \
-              --argjson has_error $([ "$CHECK_ERROR" -eq 1 ] && echo "true" || echo "false") \
+              --argjson has_error $([ "$HAS_ERROR" -eq 1 ] && echo "true" || echo "false") \
               '. + [{id: $id, name: $name, is_live: $is_live, error: $has_error}]')
-
-            sleep 2
           done
 
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -149,9 +125,9 @@ jobs:
             --argjson status "$STATUS_JSON" \
             '{updated_at: $ts, live_count: ($live | length), live: $live, channels_status: $status}' > "$OUTPUT"
 
-          echo "------------------------------------------"
-          echo "Wrote $OUTPUT com sucesso!"
-          echo "Lives ativas detectadas: $(jq '.live | length' "$OUTPUT")"
+          echo "--------------------------------------------------------"
+          echo "Wrote $OUTPUT successfully!"
+          echo "Live count: $(jq '.live | length' "$OUTPUT")"
 
       - name: Commit e Push do live.json
         run: |
@@ -160,9 +136,9 @@ jobs:
           git add live.json
           
           if git diff --cached --quiet; then
-            echo "Sem alterações para registrar."
+            echo "No changes to commit"
           else
-            git commit -m "Atualiza status das transmissões ao vivo [skip ci]"
+            git commit -m "Update live streams status via Batch API [skip ci]"
             git pull --rebase origin main || true
             git push
           fi
