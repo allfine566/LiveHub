@@ -1,19 +1,19 @@
 {
-  "updated_at": "2026-11-05T18:58:33Z",
+  "updated_at": "2026-11-05T19:07:20Z",
   "live_count": 2,
   "live": [
     {
       "id": "record_news",
       "name": "Record News",
       "video_id": "FDTg78cnWLw",
-      "title": "Link News - 05/11/2026 2026-11-05 18:58",
+      "title": "Link News - 05/11/2026 2026-11-05 19:07",
       "thumbnail": "https://i.ytimg.com/vi/FDTg78cnWLw/maxresdefault.jpg"
     },
     {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
       "video_id": "MsZ0-t_krHs",
-      "title": "AO VIVO: CÂMARA DO PARAGUAI APROVA IMPEACHMENT DE SANTIAGO PEÑA | CNN 360° 2026-11-05 18:58",
+      "title": "AO VIVO: CÂMARA DO PARAGUAI APROVA IMPEACHMENT DE SANTIAGO PEÑA | CNN 360° 2026-11-05 19:07",
       "thumbnail": "https://i.ytimg.com/vi/MsZ0-t_krHs/maxresdefault.jpg"
     }
   ],
@@ -22,49 +22,49 @@
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "record_news",
