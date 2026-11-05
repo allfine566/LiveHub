@@ -1,4 +1,66 @@
 {
-  "updated_at": "2026-11-05T18:37:42Z",
+  "updated_at": "2026-11-05T18:44:07Z",
+  "channels": [
+    {
+      "id": "tv_sucesso_mocambique",
+      "name": "TV Sucesso Moçambique",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "miramar_news",
+      "name": "Miramar News",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "tv_miramar",
+      "name": "TV Miramar",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "tvm_mocambique",
+      "name": "TVM Moçambique",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "media_mais_tv",
+      "name": "Media Mais TV",
+      "status": "unknown",
+      "candidates_checked": 2
+    },
+    {
+      "id": "limpopo_channel",
+      "name": "Limpopo Channel",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "bawito_tv",
+      "name": "Bawito TV",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "euronews_portugues",
+      "name": "Euronews Português",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "record_news",
+      "name": "Record News",
+      "status": "unknown",
+      "candidates_checked": 5
+    },
+    {
+      "id": "cnn_brasil",
+      "name": "CNN Brasil",
+      "status": "unknown",
+      "candidates_checked": 5
+    }
+  ],
   "live": []
 }
