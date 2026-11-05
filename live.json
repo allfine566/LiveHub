@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-05T20:15:29Z",
+  "updated_at": "2026-11-05T20:24:49Z",
   "live_count": 0,
   "live": [],
   "channels_status": [
@@ -7,85 +7,85 @@
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "record_news",
       "name": "Record News",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "mbc_tv_mocambique",
       "name": "MBC TV Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "tv_gloria_mocambique",
       "name": "TV Glória Moçambique",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "apostolo_onorio_cutane",
       "name": "Apóstolo Onório Cutane",
       "is_live": false,
-      "error": true
+      "error": false
     },
     {
       "id": "cmtv_sa",
       "name": "CMTV SA",
       "is_live": false,
-      "error": true
+      "error": false
     }
   ]
 }
