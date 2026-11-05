@@ -1,0 +1,56 @@
+{
+  "platform": "youtube",
+  "monitoring_interval_seconds": 300,
+  "channels": [
+    {
+      "id": "tv_sucesso_mocambique",
+      "name": "TV Sucesso Moçambique",
+      "url": "https://www.youtube.com/@tvsucessomoz/streams"
+    },
+    {
+      "id": "miramar_news",
+      "name": "Miramar News",
+      "url": "https://www.youtube.com/@miramarnews/streams"
+    },
+    {
+      "id": "tv_miramar",
+      "name": "TV Miramar",
+      "url": "https://www.youtube.com/@tvmiramar/streams"
+    },
+    {
+      "id": "tvm_mocambique",
+      "name": "TVM Moçambique",
+      "url": "https://www.youtube.com/@tvm.mocambique/streams"
+    },
+    {
+      "id": "media_mais_tv",
+      "name": "Media Mais TV",
+      "url": "https://www.youtube.com/@mediamaistv6775/streams"
+    },
+    {
+      "id": "limpopo_channel",
+      "name": "Limpopo Channel",
+      "url": "https://www.youtube.com/@limpopochannelmz5325/streams"
+    },
+    {
+      "id": "bawito_tv",
+      "name": "Bawito TV",
+      "url": "https://www.youtube.com/@bawitotv1/streams"
+    },
+    {
+      "id": "euronews_portugues",
+      "name": "Euronews Português",
+      "url": "https://www.youtube.com/@euronewspt/streams"
+    },
+    {
+      "id": "record_news",
+      "name": "Record News",
+      "url": "https://www.youtube.com/@recordnews/streams"
+    },
+	{
+      "id": "cnn_brasil",
+      "name": "CNN Brasil",
+      "url": "https://www.youtube.com/@cnnbrasil/streams"
+    }
+  ]
+}
