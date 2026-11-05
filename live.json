@@ -1,82 +1,91 @@
 {
-  "updated_at": "2026-11-05T19:07:20Z",
-  "live_count": 2,
-  "live": [
-    {
-      "id": "record_news",
-      "name": "Record News",
-      "video_id": "FDTg78cnWLw",
-      "title": "Link News - 05/11/2026 2026-11-05 19:07",
-      "thumbnail": "https://i.ytimg.com/vi/FDTg78cnWLw/maxresdefault.jpg"
-    },
-    {
-      "id": "cnn_brasil",
-      "name": "CNN Brasil",
-      "video_id": "MsZ0-t_krHs",
-      "title": "AO VIVO: CÂMARA DO PARAGUAI APROVA IMPEACHMENT DE SANTIAGO PEÑA | CNN 360° 2026-11-05 19:07",
-      "thumbnail": "https://i.ytimg.com/vi/MsZ0-t_krHs/maxresdefault.jpg"
-    }
-  ],
+  "updated_at": "2026-11-05T20:15:29Z",
+  "live_count": 0,
+  "live": [],
   "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "record_news",
       "name": "Record News",
-      "is_live": true,
-      "error": false
+      "is_live": false,
+      "error": true
     },
     {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
-      "is_live": true,
-      "error": false
+      "is_live": false,
+      "error": true
+    },
+    {
+      "id": "mbc_tv_mocambique",
+      "name": "MBC TV Moçambique",
+      "is_live": false,
+      "error": true
+    },
+    {
+      "id": "tv_gloria_mocambique",
+      "name": "TV Glória Moçambique",
+      "is_live": false,
+      "error": true
+    },
+    {
+      "id": "apostolo_onorio_cutane",
+      "name": "Apóstolo Onório Cutane",
+      "is_live": false,
+      "error": true
+    },
+    {
+      "id": "cmtv_sa",
+      "name": "CMTV SA",
+      "is_live": false,
+      "error": true
     }
   ]
 }
