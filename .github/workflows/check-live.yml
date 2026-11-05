@@ -1,8 +1,10 @@
-name: Check YouTube Live Streams (Low-Quota API)
+name: Check YouTube Live Streams (Official API Direct Search)
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    # Executa a cada 15 minutos para manter folga na cota diária (14 canais x 100 cotas x 96 vezes = 13.440 -> a cada 15 min usa 1.400 por rodada)
+    # Recomendado: a cada 20 ou 30 minutos (ex: '*/30 * * * *') para zero risco de estouro de cota
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check YouTube Live via Batch API
+      - name: Check YouTube Live via Direct Search API
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         shell: bash
@@ -31,7 +33,7 @@ jobs:
           OUTPUT="live.json"
 
           if [ -z "$YOUTUBE_API_KEY" ]; then
-            echo "ERROR: YOUTUBE_API_KEY secret is missing!"
+            echo "ERROR: YOUTUBE_API_KEY secret is empty or missing in GitHub Secrets!"
             exit 1
           fi
 
@@ -44,16 +46,16 @@ jobs:
           STATUS_JSON="[]"
 
           COUNT=$(jq '.channels | length' "$INPUT")
-          echo "Checking $COUNT channels (Optimized Low-Quota Mode)..."
+          echo "Checking $COUNT channels via YouTube Data API v3..."
           echo "--------------------------------------------------------"
 
           for i in $(seq 0 $((COUNT - 1))); do
             ID=$(jq -r ".channels[$i].id" "$INPUT")
             NAME=$(jq -r ".channels[$i].name" "$INPUT")
-            PLAYLIST_ID=$(jq -r ".channels[$i].uploads_playlist_id // empty" "$INPUT")
+            CHANNEL_ID=$(jq -r ".channels[$i].channel_id // empty" "$INPUT")
 
             echo ""
-            echo "Checking: $NAME"
+            echo "Checking: $NAME ($CHANNEL_ID)"
 
             FOUND=0
             HAS_ERROR=0
@@ -61,50 +63,39 @@ jobs:
             TITLE=""
             THUMBNAIL=""
 
-            if [ -z "$PLAYLIST_ID" ]; then
-              echo "   ✗ Erro: uploads_playlist_id não configurado no JSON."
+            if [ -z "$CHANNEL_ID" ]; then
+              echo "   ✗ Erro: channel_id não configurado no JSON."
               HAS_ERROR=1
             else
-              # 1. Pega os 3 vídeos mais recentes da playlist do canal (Custo: 1 Ponto)
-              PL_URL="https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=3&key=${YOUTUBE_API_KEY}"
-              PL_RESP=$(curl -s "$PL_URL")
+              # Chamada direta para buscar live ativa (eventType=live)
+              API_URL="https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&key=${YOUTUBE_API_KEY}"
+              RESPONSE=$(curl -s "$API_URL")
 
-              ERR_CHECK=$(echo "$PL_RESP" | jq -r '.error.message // empty')
-              if [ -n "$ERR_CHECK" ]; then
-                echo "   ✗ API Error: $ERR_CHECK"
+              # Exibe erro caso a chave de API falhe
+              ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+
+              if [ -n "$ERROR_MSG" ]; then
+                echo "   ✗ API ERROR: $ERROR_MSG"
                 HAS_ERROR=1
               else
-                # Extrai os IDs dos 3 vídeos mais recentes
-                VIDEO_IDS=$(echo "$PL_RESP" | jq -r '.items[]?.snippet.resourceId.videoId' | tr '\n' ',' | sed 's/,$//')
+                VIDEO_ID=$(echo "$RESPONSE" | jq -r '.items[0].id.videoId // empty')
+                
+                if [ -n "$VIDEO_ID" ]; then
+                  TITLE=$(echo "$RESPONSE" | jq -r '.items[0].snippet.title // "Ao Vivo"')
+                  THUMBNAIL=$(echo "$RESPONSE" | jq -r '.items[0].snippet.thumbnails.high.url // .items[0].snippet.thumbnails.default.url // ""')
 
-                if [ -n "$VIDEO_IDS" ]; then
-                  # 2. Verifica em lote se algum desses vídeos é uma LIVE ativa (Custo: 1 Ponto)
-                  VID_URL="https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${VIDEO_IDS}&key=${YOUTUBE_API_KEY}"
-                  VID_RESP=$(curl -s "$VID_URL")
+                  echo "   ✓ LIVE DETECTADA: $TITLE (ID: $VIDEO_ID)"
+                  FOUND=1
 
-                  # Filtra o item que possui a tag de live ativa
-                  LIVE_ITEM=$(echo "$VID_RESP" | jq '.items[] | select(.snippet.liveBroadcastContent == "live")' | head -n 1)
-
-                  if [ -n "$LIVE_ITEM" ] && [ "$LIVE_ITEM" != "null" ]; then
-                    VIDEO_ID=$(echo "$LIVE_ITEM" | jq -r '.id')
-                    TITLE=$(echo "$LIVE_ITEM" | jq -r '.snippet.title')
-                    THUMBNAIL=$(echo "$LIVE_ITEM" | jq -r '.snippet.thumbnails.high.url // .snippet.thumbnails.default.url')
-
-                    echo "   ✓ LIVE ATIVA DETECTADA: $TITLE (ID: $VIDEO_ID)"
-                    FOUND=1
-
-                    LIVE_JSON=$(echo "$LIVE_JSON" | jq \
-                      --arg id "$ID" \
-                      --arg name "$NAME" \
-                      --arg video_id "$VIDEO_ID" \
-                      --arg title "$TITLE" \
-                      --arg thumbnail "$THUMBNAIL" \
-                      '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
-                  else
-                    echo "   ✗ Sem transmissões ao vivo no momento."
-                  fi
+                  LIVE_JSON=$(echo "$LIVE_JSON" | jq \
+                    --arg id "$ID" \
+                    --arg name "$NAME" \
+                    --arg video_id "$VIDEO_ID" \
+                    --arg title "$TITLE" \
+                    --arg thumbnail "$THUMBNAIL" \
+                    '. + [{id: $id, name: $name, video_id: $video_id, title: $title, thumbnail: $thumbnail}]')
                 else
-                  echo "   ✗ Nenhum vídeo recente encontrado na playlist."
+                  echo "   ✗ Canal offline / Sem live ativa no momento."
                 fi
               fi
             fi
@@ -127,7 +118,7 @@ jobs:
 
           echo "--------------------------------------------------------"
           echo "Wrote $OUTPUT successfully!"
-          echo "Live count: $(jq '.live | length' "$OUTPUT")"
+          echo "Total de lives encontradas: $(jq '.live | length' "$OUTPUT")"
 
       - name: Commit e Push do live.json
         run: |
@@ -138,7 +129,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update live streams status via Batch API [skip ci]"
+            git commit -m "Update live streams status via YouTube API [skip ci]"
             git pull --rebase origin main || true
             git push
           fi
