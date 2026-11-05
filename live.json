@@ -1,66 +1,81 @@
 {
-  "updated_at": "2026-11-05T18:48:55Z",
-  "live_count": 0,
-  "live": [],
+  "updated_at": "2026-11-05T18:58:33Z",
+  "live_count": 2,
+  "live": [
+    {
+      "id": "record_news",
+      "name": "Record News",
+      "video_id": "FDTg78cnWLw",
+      "title": "Link News - 05/11/2026 2026-11-05 18:58",
+      "thumbnail": "https://i.ytimg.com/vi/FDTg78cnWLw/maxresdefault.jpg"
+    },
+    {
+      "id": "cnn_brasil",
+      "name": "CNN Brasil",
+      "video_id": "MsZ0-t_krHs",
+      "title": "AO VIVO: CÂMARA DO PARAGUAI APROVA IMPEACHMENT DE SANTIAGO PEÑA | CNN 360° 2026-11-05 18:58",
+      "thumbnail": "https://i.ytimg.com/vi/MsZ0-t_krHs/maxresdefault.jpg"
+    }
+  ],
   "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
       "name": "TV Sucesso Moçambique",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "miramar_news",
       "name": "Miramar News",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "tv_miramar",
       "name": "TV Miramar",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "tvm_mocambique",
       "name": "TVM Moçambique",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "media_mais_tv",
       "name": "Media Mais TV",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "limpopo_channel",
       "name": "Limpopo Channel",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "bawito_tv",
       "name": "Bawito TV",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "euronews_portugues",
       "name": "Euronews Português",
       "is_live": false,
-      "error": false
+      "error": true
     },
     {
       "id": "record_news",
       "name": "Record News",
-      "is_live": false,
+      "is_live": true,
       "error": false
     },
     {
       "id": "cnn_brasil",
       "name": "CNN Brasil",
-      "is_live": false,
+      "is_live": true,
       "error": false
     }
   ]
