@@ -1,15 +1,7 @@
 {
-  "updated_at": "2026-11-06T08:13:40Z",
-  "live_count": 1,
-  "live": [
-    {
-      "id": "mbc_tv_mocambique",
-      "name": "MBC TV Moçambique",
-      "video_id": "9mIcytCg82s",
-      "title": "OPINIÃO DO DIA 1ª EDIÇÃO | SEXTA-FEIRA (06/11) | MBC TV",
-      "thumbnail": "https://i.ytimg.com/vi/9mIcytCg82s/hqdefault.jpg"
-    }
-  ],
+  "updated_at": "2026-11-06T16:06:25Z",
+  "live_count": 0,
+  "live": [],
   "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
@@ -74,7 +66,7 @@
     {
       "id": "mbc_tv_mocambique",
       "name": "MBC TV Moçambique",
-      "is_live": true,
+      "is_live": false,
       "error": false
     },
     {
