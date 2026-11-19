@@ -1,7 +1,15 @@
 {
-  "updated_at": "2026-11-19T02:42:35Z",
-  "live_count": 0,
-  "live": [],
+  "updated_at": "2026-11-19T11:02:34Z",
+  "live_count": 1,
+  "live": [
+    {
+      "id": "mbc_tv_mocambique",
+      "name": "MBC TV Moçambique",
+      "video_id": "2ujjN1U-VIA",
+      "title": "MBC INFORMAÇÃO 2ª EDIÇÃO | QUINTA-FEIRA (19/11) | MBC TV",
+      "thumbnail": "https://i.ytimg.com/vi/2ujjN1U-VIA/hqdefault.jpg"
+    }
+  ],
   "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
@@ -66,7 +74,7 @@
     {
       "id": "mbc_tv_mocambique",
       "name": "MBC TV Moçambique",
-      "is_live": false,
+      "is_live": true,
       "error": false
     },
     {
