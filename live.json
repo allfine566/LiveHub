@@ -1,15 +1,7 @@
 {
-  "updated_at": "2026-11-20T18:14:46Z",
-  "live_count": 1,
-  "live": [
-    {
-      "id": "mbc_tv_mocambique",
-      "name": "MBC TV Moçambique",
-      "video_id": "seWdis9gClo",
-      "title": "JORNAL DA NOITE | SEXTA-FEIRA (20/11) | MBC TV",
-      "thumbnail": "https://i.ytimg.com/vi/seWdis9gClo/hqdefault.jpg"
-    }
-  ],
+  "updated_at": "2026-11-21T00:05:43Z",
+  "live_count": 0,
+  "live": [],
   "channels_status": [
     {
       "id": "tv_sucesso_mocambique",
@@ -74,7 +66,7 @@
     {
       "id": "mbc_tv_mocambique",
       "name": "MBC TV Moçambique",
-      "is_live": true,
+      "is_live": false,
       "error": false
     },
     {
